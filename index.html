@@ -78,6 +78,13 @@
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
     draw();
+    // Tap the screen once to trigger full screen
+window.addEventListener('touchstart', function() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+    }
+}, { once: true }); // This only runs the first time you touch
+
 </script>
 </body>
 </html>
