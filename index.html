@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dark Room Prototype</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        /* CSS: This makes the screen black and full-screen */
+        body { 
+            margin: 0; 
+            background: #000; 
+            overflow: hidden; 
+            touch-action: none; 
+        }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+    // JS: The Brain of the game
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    // Player starts in the middle
+    let player = { x: window.innerWidth/2, y: window.innerHeight/2 };
+
+    // 1. Setup the screen size
+    function init() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    }
+
+    // 2. Touch movement logic
+    function handleMove(e) {
+        e.preventDefault();
+        const touch = e.touches ? e.touches[0] : e;
+        // The player moves directly to your finger position
+        player.x = touch.clientX;
+        player.y = touch.clientY;
+    }
+
+    // Listen for touch on phone or mouse on PC
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchstart', handleMove, { passive: false });
+    window.addEventListener('resize', init);
+
+    // 3. The Drawing Loop (This runs forever)
+    function draw() {
+        // Fill the background with pitch black
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, width, height);
+
+        // --- DRAW THE SOFT YELLOW LIGHT ---
+        // Create a circular glow (Radial Gradient)
+        let lightRadius = 150;
+        let gradient = ctx.createRadialGradient(
+            player.x, player.y, 0, 
+            player.x, player.y, lightRadius
+        );
+        
+        // Colors: Soft Yellow (0.4 opacity) fading to Black (0 opacity)
+        gradient.addColorStop(0, 'rgba(255, 230, 100, 0.4)'); 
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, lightRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // --- DRAW THE PLAYER ---
+        ctx.fillStyle = "#fff"; // Small white dot for the player
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        requestAnimationFrame(draw);
+    }
+
+    init();
+    draw();
+</script>
+</body>
+</html>
