@@ -78,6 +78,21 @@
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
     draw();
+    // --- NEW: FULLSCREEN TRIGGER ---
+function goFullScreen() {
+    const doc = window.document.documentElement;
+    if (doc.requestFullscreen) {
+        doc.requestFullscreen();
+    } else if (doc.webkitRequestFullscreen) {
+        doc.webkitRequestFullscreen(); // For Chrome/Safari
+    }
+}
+
+// When the player touches the screen once, it triggers the hide-bar mode
+window.addEventListener('touchstart', function() {
+    goFullScreen();
+}, { once: true }); 
+
     // Tap the screen once to trigger full screen
 window.addEventListener('touchstart', function() {
     if (!document.fullscreenElement) {
