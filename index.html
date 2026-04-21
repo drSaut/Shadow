@@ -2,24 +2,65 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="manifest.json">
-
     <title>Shadow Lantern</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <!-- PWA: Makes Chrome Android hide URL bar when launched from home screen -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000000">
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body, html { 
-            width: 100%; 
-            height: 100%; 
-            overflow: hidden; 
-            background: #000; 
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        /* The Play Button Styling */
+        #start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        #game-title {
+            font-family: Georgia, serif;
+            font-size: 36px;
+            color: #ffeeaa;
+            text-shadow: 0 0 30px rgba(255, 220, 80, 0.8);
+            letter-spacing: 4px;
+        }
+
+        /* Shown only if NOT running as installed PWA */
+        #install-hint {
+            display: none;
+            background: rgba(255, 238, 170, 0.08);
+            border: 1px solid rgba(255, 238, 170, 0.25);
+            border-radius: 16px;
+            padding: 16px 20px;
+            color: #ffeeaa;
+            font-family: sans-serif;
+            font-size: 14px;
+            line-height: 1.7;
+            max-width: 300px;
+        }
+
+        #install-hint strong {
+            display: block;
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+
         #btn-fullscreen {
             padding: 20px 40px;
             font-size: 24px;
@@ -33,45 +74,65 @@
             box-shadow: 0 0 20px rgba(255, 238, 170, 0.5);
         }
 
-        canvas { 
-            display: none; /* Hidden until button is pressed */
-            width: 100vw; 
-            height: 100vh; 
+        canvas {
+            display: none;
+            width: 100vw;
+            height: 100vh;
             touch-action: none;
         }
     </style>
 </head>
 <body>
 
-    <button id="btn-fullscreen">START FULLSCREEN</button>
+    <div id="start-screen">
+        <div id="game-title">🕯 SHADOW LANTERN</div>
+
+        <!-- This hint only shows when NOT installed as a PWA -->
+        <div id="install-hint">
+            <strong>🔆 Play True Fullscreen</strong>
+            Tap your browser menu → <em>"Add to Home Screen"</em> → then launch from there to hide the URL bar completely.
+        </div>
+
+        <button id="btn-fullscreen">START GAME</button>
+    </div>
+
     <canvas id="gameCanvas"></canvas>
 
 <script>
     const btn = document.getElementById('btn-fullscreen');
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+    const startScreen = document.getElementById('start-screen');
+    const installHint = document.getElementById('install-hint');
 
     let player = { x: 0, y: 0 };
     let gameStarted = false;
 
+    // Check if running as installed PWA (fullscreen display mode)
+    // If NOT installed, show the hint to guide the user
+    const isInstalledPWA = window.matchMedia('(display-mode: fullscreen)').matches
+                        || window.matchMedia('(display-mode: standalone)').matches
+                        || window.navigator.standalone === true;
+
+    if (!isInstalledPWA) {
+        installHint.style.display = 'block';
+    }
+
     // --- FULLSCREEN FUNCTION ---
     function start() {
-        // Request fullscreen mode
+        // Try requestFullscreen anyway — works on some browsers/devices
         const doc = document.documentElement;
         if (doc.requestFullscreen) {
-            doc.requestFullscreen();
+            doc.requestFullscreen().catch(() => {});
         } else if (doc.webkitRequestFullscreen) {
             doc.webkitRequestFullscreen();
         }
 
-        // Hide button, show canvas
-        btn.style.display = 'none';
+        startScreen.style.display = 'none';
         canvas.style.display = 'block';
-        
+
         gameStarted = true;
         resize();
-        
-        // Start drawing
         draw();
     }
 
@@ -90,12 +151,8 @@
         player.y = touch.clientY;
     }
 
-    // Button Listener
     btn.addEventListener('click', start);
-    btn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        start();
-    });
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); start(); });
 
     window.addEventListener('resize', resize);
     window.addEventListener('touchmove', handleInput, { passive: false });
@@ -128,10 +185,8 @@
         requestAnimationFrame(draw);
     }
 
-    // Set initial position
     player.x = window.innerWidth / 2;
     player.y = window.innerHeight / 2;
 </script>
 </body>
 </html>
-
