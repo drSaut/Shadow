@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <title>Shadow Lantern</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
     <style>
-        /* CSS: Resets and Full Screen Layout */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body, html { 
@@ -14,87 +12,113 @@
             height: 100%; 
             overflow: hidden; 
             background: #000; 
-            position: fixed; /* Fixes the body to prevent "pull-to-refresh" */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The Play Button Styling */
+        #btn-fullscreen {
+            padding: 20px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #000;
+            background: #ffeeaa;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 0 20px rgba(255, 238, 170, 0.5);
         }
 
         canvas { 
-            display: block; 
+            display: none; /* Hidden until button is pressed */
             width: 100vw; 
             height: 100vh; 
-            touch-action: none; /* Disables browser gestures so game handles touch */
+            touch-action: none;
         }
     </style>
 </head>
 <body>
 
+    <button id="btn-fullscreen">START FULLSCREEN</button>
     <canvas id="gameCanvas"></canvas>
 
 <script>
+    const btn = document.getElementById('btn-fullscreen');
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
     let player = { x: 0, y: 0 };
-    let hasInteracted = false;
+    let gameStarted = false;
 
     // --- FULLSCREEN FUNCTION ---
-    // This hides the URL bar. Browsers ONLY allow this after a user touch.
-    function goImmersive() {
-        if (!hasInteracted) {
-            const doc = document.documentElement;
-            if (doc.requestFullscreen) {
-                doc.requestFullscreen();
-            } else if (doc.webkitRequestFullscreen) { /* Chrome & Safari Mobile */
-                doc.webkitRequestFullscreen();
-            }
-            hasInteracted = true;
+    function start() {
+        // Request fullscreen mode
+        const doc = document.documentElement;
+        if (doc.requestFullscreen) {
+            doc.requestFullscreen();
+        } else if (doc.webkitRequestFullscreen) {
+            doc.webkitRequestFullscreen();
         }
+
+        // Hide button, show canvas
+        btn.style.display = 'none';
+        canvas.style.display = 'block';
+        
+        gameStarted = true;
+        resize();
+        
+        // Start drawing
+        draw();
     }
 
-    // --- SETUP & RESIZE ---
+    // --- SETUP & INPUT ---
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
     }
 
-    // --- INPUT HANDLING ---
     function handleInput(e) {
-        // 1. Try to go fullscreen on first touch
-        goImmersive();
-
-        // 2. Prevent the browser from scrolling/bouncing
+        if (!gameStarted) return;
         if (e.cancelable) e.preventDefault();
 
-        // 3. Get touch or mouse coordinates
         const touch = e.touches ? e.touches[0] : e;
         player.x = touch.clientX;
         player.y = touch.clientY;
     }
 
-    // Listeners for mobile touch and desktop mouse
+    // Button Listener
+    btn.addEventListener('click', start);
+    btn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        start();
+    });
+
     window.addEventListener('resize', resize);
-    window.addEventListener('touchstart', handleInput, { passive: false });
     window.addEventListener('touchmove', handleInput, { passive: false });
     window.addEventListener('mousemove', handleInput);
 
-    // --- GAME DRAWING LOOP ---
+    // --- DRAW LOOP ---
     function draw() {
-        // Clear screen with black
+        if (!gameStarted) return;
+
         ctx.fillStyle = "black";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw Soft Yellow Torch Light
-        let radius = 180;
+        // Torch Glow
+        let radius = 200;
         let grad = ctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, radius);
-        grad.addColorStop(0, 'rgba(255, 225, 100, 0.45)'); // Inner soft glow
-        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');           // Fade to black
+        grad.addColorStop(0, 'rgba(255, 230, 100, 0.4)');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.arc(player.x, player.y, radius, 0, Math.PI * 2);
         ctx.fill();
 
-        // Draw Player Core
-        ctx.fillStyle = "#ffffff";
+        // Player
+        ctx.fillStyle = "#fff";
         ctx.beginPath();
         ctx.arc(player.x, player.y, 6, 0, Math.PI * 2);
         ctx.fill();
@@ -102,12 +126,9 @@
         requestAnimationFrame(draw);
     }
 
-    // Initialize
-    resize();
-    // Center player at start
-    player.x = canvas.width / 2;
-    player.y = canvas.height / 2;
-    draw();
+    // Set initial position
+    player.x = window.innerWidth / 2;
+    player.y = window.innerHeight / 2;
 </script>
 </body>
 </html>
