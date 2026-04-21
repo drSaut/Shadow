@@ -1,87 +1,84 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dark Room Prototype</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shadow Lantern</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <style>
-        /* CSS: This makes the screen black and full-screen */
-        body { 
-            margin: 0; 
-            background: #000; 
+        /* This ensures no scrollbars and full black background */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { 
+            width: 100%; 
+            height: 100%; 
             overflow: hidden; 
+            background: #000; 
+            position: fixed; /* Prevents "pull-to-refresh" on mobile */
+        }
+        canvas { 
+            display: block; 
+            width: 100vw; 
+            height: 100vh; 
             touch-action: none; 
         }
-        canvas { display: block; }
     </style>
 </head>
 <body>
-
     <canvas id="gameCanvas"></canvas>
 
 <script>
-    // JS: The Brain of the game
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    let width, height;
-    // Player starts in the middle
-    let player = { x: window.innerWidth/2, y: window.innerHeight/2 };
+    let player = { x: 0, y: 0 };
 
-    // 1. Setup the screen size
-    function init() {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
+    // This function stretches the "paper" to the exact size of the window
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
     }
 
-    // 2. Touch movement logic
     function handleMove(e) {
         e.preventDefault();
         const touch = e.touches ? e.touches[0] : e;
-        // The player moves directly to your finger position
         player.x = touch.clientX;
         player.y = touch.clientY;
     }
 
-    // Listen for touch on phone or mouse on PC
+    window.addEventListener('resize', resize);
     window.addEventListener('mousemove', handleMove);
-    window.addEventListener('touchmove', handleMove, { passive: false });
     window.addEventListener('touchstart', handleMove, { passive: false });
-    window.addEventListener('resize', init);
+    window.addEventListener('touchmove', handleMove, { passive: false });
 
-    // 3. The Drawing Loop (This runs forever)
     function draw() {
-        // Fill the background with pitch black
         ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, width, height);
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // --- DRAW THE SOFT YELLOW LIGHT ---
-        // Create a circular glow (Radial Gradient)
-        let lightRadius = 150;
-        let gradient = ctx.createRadialGradient(
-            player.x, player.y, 0, 
-            player.x, player.y, lightRadius
-        );
-        
-        // Colors: Soft Yellow (0.4 opacity) fading to Black (0 opacity)
-        gradient.addColorStop(0, 'rgba(255, 230, 100, 0.4)'); 
-        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        // Soft Yellow Light
+        let radius = 180;
+        let grad = ctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, radius);
+        grad.addColorStop(0, 'rgba(255, 220, 100, 0.4)');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-        ctx.fillStyle = gradient;
+        ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.arc(player.x, player.y, lightRadius, 0, Math.PI * 2);
+        ctx.arc(player.x, player.y, radius, 0, Math.PI * 2);
         ctx.fill();
 
-        // --- DRAW THE PLAYER ---
-        ctx.fillStyle = "#fff"; // Small white dot for the player
+        // White Player Core
+        ctx.fillStyle = "#fff";
         ctx.beginPath();
-        ctx.arc(player.x, player.y, 5, 0, Math.PI * 2);
+        ctx.arc(player.x, player.y, 6, 0, Math.PI * 2);
         ctx.fill();
 
         requestAnimationFrame(draw);
     }
 
-    init();
+    // Start
+    resize();
+    // Center player initially
+    player.x = canvas.width / 2;
+    player.y = canvas.height / 2;
     draw();
 </script>
 </body>
 </html>
+
