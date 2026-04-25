@@ -117,7 +117,7 @@
         if (!gameActive) return;
         const touch = e.touches ? e.touches[0] : e;
         player.x = touch.clientX;
-        player.y = touch.clientY - (e.touches ? 60 : 0);
+        player.y = touch.clientY - (e.touches ? 120 : 0);
     }
 
     window.addEventListener('touchmove', (e) => { e.preventDefault(); handleInput(e); }, {passive:false});
