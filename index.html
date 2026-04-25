@@ -8,7 +8,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; position: fixed; font-family: 'Courier New', monospace; }
         
-        /* HUD Layout */
         #ui-container {
             position: absolute; top: 10px; left: 0; width: 100%;
             display: flex; justify-content: space-around; align-items: flex-start;
@@ -16,17 +15,16 @@
         }
 
         .hud-box {
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid #ffeeaa;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #ffeeaa;
             padding: 8px 15px; color: #fff; text-align: center;
             min-width: 90px; border-radius: 4px;
-            box-shadow: 0 0 10px rgba(255, 238, 170, 0.3);
+            box-shadow: 0 0 25px #ffaa00;
         }
 
-        .label { font-size: 10px; color: #888; display: block; margin-bottom: 2px; }
+        .label { font-size: 10px; color: #ffeeaa; display: block; margin-bottom: 2px; font-weight: bold; }
         .value { font-size: 18px; font-weight: bold; }
 
-        /* Background Image Splash Screen */
         #splash-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: #000 url('Splash.jpg') no-repeat center center;
@@ -36,38 +34,32 @@
             z-index: 1000; text-align: center;
         }
 
-        /* Overlay to make text readable over the photo */
         .overlay {
-            background: rgba(0, 0, 0, 0.6);
-            padding: 20px; border-radius: 15px;
-            border: 2px solid #ffeeaa;
-            backdrop-filter: blur(2px);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 25px; border-radius: 15px;
+            border: 3px solid #ffeeaa;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 0 50px rgba(255, 238, 170, 0.5);
         }
 
-        h1 { color: #ffeeaa; font-size: 32px; margin-bottom: 10px; letter-spacing: 5px; text-shadow: 2px 2px #000; }
-        .instr { color: #fff; font-size: 13px; margin-bottom: 20px; line-height: 1.6; text-shadow: 1px 1px #000; }
+        h1 { color: #ffeeaa; font-size: 32px; margin-bottom: 10px; letter-spacing: 5px; text-shadow: 0 0 15px #ffaa00; }
+        .instr { color: #fff; font-size: 13px; margin-bottom: 20px; line-height: 1.6; }
         
         .btn { 
             background: #ffeeaa; color: #000; padding: 15px 40px; 
             font-size: 20px; font-weight: bold; border-radius: 50px;
-            cursor: pointer; border: none; box-shadow: 0 4px #b8a25a;
+            cursor: pointer; border: none; box-shadow: 0 0 20px #ffeeaa;
+            touch-action: manipulation;
         }
-        .btn:active { transform: translateY(2px); box-shadow: 0 2px #b8a25a; }
 
         #game-over {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); display: none; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 1001; text-align: center;
+            justify-content: center; align-items: center; z-index: 2000; text-align: center;
         }
 
-        /* Animations */
-        .blink-level { animation: blinkLevel 0.4s step-end 3; }
-        .blink-lives { animation: blinkLives 0.4s step-end 3; }
-        @keyframes blinkLevel { 50% { background: #ffeeaa; color: #000; } }
-        @keyframes blinkLives { 50% { background: #00ff00; color: #000; } }
-
         canvas { display: none; width: 100vw; height: 100vh; touch-action: none; }
-        #countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ffeeaa; font-size: 80px; z-index: 5; pointer-events: none; }
+        #countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ffeeaa; font-size: 80px; z-index: 5; pointer-events: none; text-shadow: 0 0 30px #ffaa00; }
     </style>
 </head>
 <body>
@@ -84,18 +76,18 @@
         <div class="overlay">
             <h1>KOPIII HANUM</h1>
             <p class="instr">
-                <span style="color:#ff4444">●</span> Hindari Bola Merah<br>
-                <span style="color:#00ffff">○</span> Hindari Bola Putih yang akan pecah pada setiap level<br>
-                <span style="color:#ffd700">★</span> Kejar dan Tangkap Bola Emas : extra perlindungan selama 7 Detik<br>
-                <span style="color:#00ff00">+2 Nyawa</span> Setiap 50 Detik!
+                <span style="color:#ff0000;">●</span> Hindari Bola Merah & <span style="color:#00ff00; font-weight:bold;">Big Boss</span><br>
+                <span style="color:#ffffff;">○</span> Hindari Supervisor Bola Putih, akan meledak setiap level<br>
+                <span style="color:#ffd700;">★</span> Kejar dan Tangkap Bola Emas: extra pertahanan 7 Detik<br>
+                <span style="color:#00ff00;">+2 Nyawa</span> Setiap 50 Detik!
             </p>
             <button class="btn" id="startBtn">START GAME</button>
         </div>
     </div>
 
     <div id="game-over">
-        <h1 style="color:red">GAME OVER</h1>
-        <p style="color:white; margin-bottom: 20px;">Final Score: <span id="finalScore">0</span></p>
+        <h1 style="color:red; text-shadow: 0 0 20px red; font-size: 48px; margin-bottom: 10px;">GAME OVER</h1>
+        <p style="color:white; font-size: 24px; margin-bottom: 30px;">Final Score: <span id="finalScore">0</span></p>
         <button class="btn" onclick="location.reload()">RETRY</button>
     </div>
 
@@ -106,14 +98,13 @@
     const ctx = canvas.getContext('2d');
     const startBtn = document.getElementById('startBtn');
     const countdownEl = document.getElementById('countdown');
-    const levelBox = document.getElementById('levelBox');
-    const livesBox = document.getElementById('livesBox');
-
+    
     let score = 0, lives = 3, level = 1, totalSeconds = 0;
     let gameActive = false, dangerActive = false;
     let player = { x: 0, y: 0, radius: 10, isShielded: false, shieldTimer: 0 };
-    let obstacles = [], novas = [], fragments = [], bonuses = [];
+    let obstacles = [], novas = [], fragments = [], bonuses = [], hunters = [];
     let novaSpawnedInThisLevel = false, pulseAngle = 0;
+    let gameTimerInterval, animationFrameId;
 
     function startGame() {
         if (gameActive) return;
@@ -138,12 +129,20 @@
             else {
                 clearInterval(interval);
                 countdownEl.innerText = "GO!";
-                setTimeout(() => { countdownEl.innerText = ""; dangerActive = true; spawnObstacle(); startTimers(); }, 800);
+                setTimeout(() => { 
+                    countdownEl.innerText = ""; 
+                    dangerActive = true; 
+                    spawnObstacle(); 
+                    startTimers(); 
+                }, 800);
             }
         }, 1000);
     }
 
-    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
 
     function handleInput(e) {
         if (!gameActive) return;
@@ -168,85 +167,145 @@
         setTimeout(spawnObstacle, 1000 / (0.8 + level * 0.15));
     }
 
+    function spawnHunter() {
+        if (!gameActive || level < 5) return;
+        let side = Math.floor(Math.random()*4);
+        let h = { x: 0, y: 0, radius: 28, timer: 8, speed: 0.8 + ((level-5) * 0.25), pulseOffset: Math.random()*Math.PI*2 };
+        if (side === 0) { h.x = Math.random()*canvas.width; h.y = -50; }
+        else if (side === 1) { h.x = canvas.width+50; h.y = Math.random()*canvas.height; }
+        else if (side === 2) { h.x = Math.random()*canvas.width; h.y = canvas.height+50; }
+        else { h.x = -50; h.y = Math.random()*canvas.height; }
+        hunters.push(h);
+    }
+
     function spawnBonus() {
         if (!gameActive) return;
-        let side = Math.floor(Math.random()*4);
-        let b = { x: 0, y: 0, radius: 12, vx: 0, vy: 0 };
-        let speed = 2.2;
-        if (side === 0) { b.x = Math.random()*canvas.width; b.y = -20; b.vy = speed; }
-        else if (side === 1) { b.x = canvas.width+20; b.y = Math.random()*canvas.height; b.vx = -speed; }
-        else if (side === 2) { b.x = Math.random()*canvas.width; b.y = canvas.height+20; b.vy = -speed; }
-        else { b.x = -20; b.y = Math.random()*canvas.height; b.vx = speed; }
+        let b = { x: Math.random()*canvas.width, y: -20, radius: 12, vx: 0, vy: 2.2 };
         bonuses.push(b);
     }
 
     function spawnNova() {
         if (!gameActive || novaSpawnedInThisLevel) return;
-        let side = Math.floor(Math.random()*4);
-        let n = { x: 0, y: 0, radius: 15, targetX: canvas.width/2, targetY: canvas.height/2, speed: 1.5 + (level*0.2) };
-        if (side === 0) { n.x = Math.random()*canvas.width; n.y = -20; }
-        else if (side === 1) { n.x = canvas.width+20; n.y = Math.random()*canvas.height; }
-        else if (side === 2) { n.x = Math.random()*canvas.width; n.y = canvas.height+20; }
-        else { n.x = -20; n.y = Math.random()*canvas.height; }
+        let n = { x: Math.random()*canvas.width, y: -20, radius: 15, targetX: canvas.width/2, targetY: canvas.height/2, speed: 1.5 + (level*0.2) };
         novas.push(n); novaSpawnedInThisLevel = true;
     }
 
     function startTimers() {
-        setInterval(() => {
+        gameTimerInterval = setInterval(() => {
             if (gameActive) {
                 totalSeconds++;
-                if (totalSeconds % 10 === 0) {
+                if (totalSeconds % 15 === 0) {
                     level++; novaSpawnedInThisLevel = false;
                     document.getElementById('levelVal').innerText = level;
-                    levelBox.classList.remove('blink-level'); void levelBox.offsetWidth; levelBox.classList.add('blink-level');
                     if (level >= 3) spawnNova();
                 }
+                if (totalSeconds % 30 === 0) spawnHunter();
                 if (totalSeconds % 20 === 0) spawnBonus();
                 if (totalSeconds % 50 === 0) {
                     lives += 2; document.getElementById('livesVal').innerText = lives;
-                    livesBox.classList.remove('blink-lives'); void livesBox.offsetWidth; livesBox.classList.add('blink-lives');
                 }
-                if (player.isShielded) { player.shieldTimer--; if (player.shieldTimer <= 0) player.isShielded = false; }
+                if (player.isShielded) { 
+                    player.shieldTimer--; 
+                    if (player.shieldTimer <= 0) player.isShielded = false; 
+                }
+                for(let h of hunters) h.timer--;
+                hunters = hunters.filter(h => h.timer > 0);
             }
         }, 1000);
     }
 
     function gameLoop() {
-        if (!gameActive) return;
-        ctx.fillStyle = "black"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (!gameActive) return; // THIS STOPS THE FREEZE
+        
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         pulseAngle += 0.08;
 
+        let lanternRadius = 125; 
+        let grad = ctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, lanternRadius);
+        
         if (player.isShielded) {
-            ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 3; ctx.beginPath(); 
-            ctx.arc(player.x, player.y, player.radius + 15, 0, Math.PI*2); ctx.stroke();
-            ctx.fillStyle = "#ffd700"; ctx.fillRect(player.x - 15, player.y + 25, (player.shieldTimer/7)*30, 4);
+            grad.addColorStop(0, 'rgba(255, 215, 0, 0.7)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        } else {
+            grad.addColorStop(0, 'rgba(255, 238, 170, 0.6)'); 
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        }
+        
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, lanternRadius, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.shadowBlur = 15; ctx.shadowColor = "#fff";
+        ctx.fillStyle = "#fff";
+        ctx.beginPath(); ctx.arc(player.x, player.y, player.radius, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+
+        if (player.isShielded) {
+            ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 3; ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius + 15, 0, Math.PI * 2); ctx.stroke();
+            ctx.fillStyle = "#ffd700";
+            ctx.fillRect(player.x - 15, player.y + 25, (player.shieldTimer / 7) * 30, 4);
         }
 
-        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(player.x, player.y, player.radius, 0, Math.PI*2); ctx.fill();
-
-        for (let i = bonuses.length-1; i>=0; i--) {
-            let b = bonuses[i]; b.x += b.vx; b.y += b.vy;
-            ctx.fillStyle = "#ffd700"; ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI*2); ctx.fill();
-            if (Math.hypot(player.x-b.x, player.y-b.y) < player.radius+b.radius) { player.isShielded = true; player.shieldTimer = 7; bonuses.splice(i,1); }
+        // Hunters
+        for (let i = hunters.length-1; i>=0; i--) {
+            let h = hunters[i];
+            let angle = Math.atan2(player.y - h.y, player.x - h.x);
+            h.x += Math.cos(angle) * h.speed; h.y += Math.sin(angle) * h.speed;
+            let r = h.radius * (1 + Math.sin(pulseAngle + h.pulseOffset)*0.1);
+            ctx.shadowBlur = 30; ctx.shadowColor = "#00ff00";
+            ctx.strokeStyle = "#00ff00"; ctx.lineWidth = 5; 
+            ctx.beginPath(); ctx.arc(h.x, h.y, r + 5, 0, Math.PI*2); ctx.stroke();
+            ctx.shadowBlur = 0; ctx.fillStyle = "#aa0000"; ctx.beginPath(); ctx.arc(h.x, h.y, r, 0, Math.PI*2); ctx.fill();
+            if (Math.hypot(player.x-h.x, player.y-h.y) < player.radius+r) { 
+                if(!player.isShielded) hit(); hunters.splice(i,1); 
+            }
         }
 
+        // Obstacles
         for (let i = obstacles.length-1; i>=0; i--) {
             let o = obstacles[i]; o.x += o.vx; o.y += o.vy;
             let r = o.radius * (1 + Math.sin(pulseAngle + o.pulseOffset)*0.15);
-            ctx.shadowBlur = 15; ctx.shadowColor = "red"; ctx.fillStyle = "#ff3333";
-            ctx.beginPath(); ctx.arc(o.x, o.y, r, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
-            if (Math.hypot(player.x-o.x, player.y-o.y) < player.radius+r) { if(!player.isShielded) hit(); obstacles.splice(i,1); }
-            if (o.x < -100 || o.x > canvas.width+100 || o.y < -100 || o.y > canvas.height+100) { obstacles.splice(i,1); score += 10; }
+            ctx.shadowBlur = 15; ctx.shadowColor = "#ff0000";
+            ctx.fillStyle = "#ff2222";
+            ctx.beginPath(); ctx.arc(o.x, o.y, r, 0, Math.PI*2); ctx.fill(); 
+            ctx.shadowBlur = 0;
+            if (Math.hypot(player.x-o.x, player.y-o.y) < player.radius+r) { 
+                if(!player.isShielded) hit(); obstacles.splice(i,1); 
+            }
+            if (o.x < -100 || o.x > canvas.width+100 || o.y < -100 || o.y > canvas.height+100) { 
+                obstacles.splice(i,1); score += 10; 
+            }
         }
 
+        // Bonus
+        for (let b of bonuses) {
+            b.x += b.vx; b.y += b.vy;
+            ctx.shadowBlur = 20; ctx.shadowColor = "#ffd700";
+            ctx.fillStyle = "#ffd700"; ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+        bonuses = bonuses.filter((b) => {
+            if (Math.hypot(player.x-b.x, player.y-b.y) < player.radius+b.radius) { 
+                player.isShielded = true; player.shieldTimer = 7; return false; 
+            }
+            return b.y < canvas.height + 50;
+        });
+
+        // Supervisor
         for (let i = novas.length-1; i>=0; i--) {
             let n = novas[i]; let a = Math.atan2(n.targetY-n.y, n.targetX-n.x);
             n.x += Math.cos(a)*n.speed; n.y += Math.sin(a)*n.speed;
+            ctx.shadowBlur = 20; ctx.shadowColor = "#fff";
             ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(n.x, n.y, n.radius, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
             if (Math.hypot(n.x-n.targetX, n.y-n.targetY) < 10) { explodeNova(n.x, n.y); novas.splice(i,1); }
             if (Math.hypot(player.x-n.x, player.y-n.y) < player.radius+n.radius) { if(!player.isShielded) hit(); novas.splice(i,1); }
         }
 
+        // Fragments
         for (let i = fragments.length-1; i>=0; i--) {
             let f = fragments[i]; f.x += f.vx; f.y += f.vy;
             ctx.fillStyle = "#00ffff"; ctx.beginPath(); ctx.arc(f.x, f.y, f.radius, 0, Math.PI*2); ctx.fill();
@@ -255,7 +314,7 @@
         }
 
         document.getElementById('scoreVal').innerText = score;
-        requestAnimationFrame(gameLoop);
+        animationFrameId = requestAnimationFrame(gameLoop);
     }
 
     function explodeNova(x, y) {
@@ -267,8 +326,21 @@
     }
 
     function hit() {
-        lives--; document.getElementById('livesVal').innerText = lives;
-        if (lives <= 0) { gameActive = false; document.getElementById('finalScore').innerText = score; document.getElementById('game-over').style.display = 'flex'; }
+        lives--; 
+        document.getElementById('livesVal').innerText = lives;
+        if (lives <= 0) {
+            endGame();
+        }
+    }
+
+    function endGame() {
+        gameActive = false;
+        dangerActive = false;
+        clearInterval(gameTimerInterval); // Stops all timer logic
+        cancelAnimationFrame(animationFrameId); // Stops the drawing loop
+        
+        document.getElementById('finalScore').innerText = score;
+        document.getElementById('game-over').style.display = 'flex';
     }
 
     window.addEventListener('resize', resize);
