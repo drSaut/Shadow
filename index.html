@@ -2,13 +2,46 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Kopiii Hanum: </title>
+    <title>Kopiii Hanum</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; position: fixed; font-family: 'Courier New', monospace; }
         
-        #ui { position: absolute; top: 20px; left: 20px; color: #fff; z-index: 10; pointer-events: none; }
+        /* HUD Layout */
+        #ui-container {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .hud-box {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #ffeeaa;
+            padding: 8px 15px;
+            color: #fff;
+            text-align: center;
+            min-width: 100px;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(255, 238, 170, 0.2);
+        }
+
+        .label { font-size: 10px; color: #888; display: block; margin-bottom: 2px; }
+        .value { font-size: 18px; font-weight: bold; }
+
+        /* Animations */
+        .blink-level { animation: blinkLevel 0.4s step-end 2; }
+        .blink-lives { animation: blinkLives 0.4s step-end 2; }
+
+        @keyframes blinkLevel { 50% { background: #ffeeaa; color: #000; } }
+        @keyframes blinkLives { 50% { background: #00ff00; color: #000; } }
+
         #countdown { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             color: #ffeeaa; font-size: 80px; z-index: 5; pointer-events: none; text-shadow: 0 0 20px #ffaa00;
@@ -35,10 +68,19 @@
 </head>
 <body>
 
-    <div id="ui">
-        <div>SCORE: <span id="scoreVal">0</span></div>
-        <div>LIVES: <span id="livesVal">3</span></div>
-        <div>LEVEL: <span id="levelVal">1</span></div>
+    <div id="ui-container">
+        <div class="hud-box">
+            <span class="label">SCORE</span>
+            <span id="scoreVal" class="value">0</span>
+        </div>
+        <div id="levelBox" class="hud-box">
+            <span class="label">LEVEL</span>
+            <span id="levelVal" class="value">1</span>
+        </div>
+        <div id="livesBox" class="hud-box">
+            <span class="label">LIVES</span>
+            <span id="livesVal" class="value">3</span>
+        </div>
     </div>
 
     <div id="countdown"></div>
@@ -46,9 +88,10 @@
     <div id="splash-screen">
         <h1>KOPIII HANUM</h1>
         <p class="instr">
-            <span style="color:red">Merah</span>: Musuh Biasa<br>
-            <span style="color:#00ffff">Putih</span>: supervisor (1x per level)<br>
-             akan meledak di tengah layar! HINDARI MEREKA SELAMA 10 DETIK, UNTUK NAIK KE LEVEL BERIKUTNYA
+            <span style="color:#ff4444">Bola Merah </span>: adalah Musuh, Hindari<br>
+            <span style="color:#00ffff">Bola Putih</span>: Supervisor akan meledan setiap 1 level, Hindari<br>
+            <span style="color:#ffd700">Bola Emas</span>: Kejar dan tangkap untuk extra perlindungan <br>
+            Extra +2 nyawa setiap 50 detik!
         </p>
         <button class="btn" id="startBtn">START GAME</button>
     </div>
@@ -67,13 +110,20 @@
     const startBtn = document.getElementById('startBtn');
     const countdownEl = document.getElementById('countdown');
     
+    const levelBox = document.getElementById('levelBox');
+    const livesBox = document.getElementById('livesBox');
+
     let score = 0, lives = 3, level = 1;
+    let totalSeconds = 0;
     let gameActive = false, dangerActive = false;
-    let player = { x: 0, y: 0, radius: 10 };
+    let player = { x: 0, y: 0, radius: 10, isShielded: false, shieldTimer: 0 };
+    
     let obstacles = [];
     let novas = [];
     let fragments = [];
+    let bonuses = [];
     let novaSpawnedInThisLevel = false;
+    let pulseAngle = 0;
 
     function startGame() {
         if (gameActive) return;
@@ -102,7 +152,7 @@
                     countdownEl.innerText = ""; 
                     dangerActive = true; 
                     spawnObstacle();
-                    startLevelTimer();
+                    startTimers();
                 }, 800);
             }
         }, 1000);
@@ -125,8 +175,9 @@
 
     function spawnObstacle() {
         if (!gameActive || !dangerActive) return;
-        let o = { x: 0, y: 0, size: 20 + Math.random() * 15, vx: 0, vy: 0 };
         let speed = 2.5 + (level * 0.4);
+        let size = 10 + Math.random() * 8; 
+        let o = { x: 0, y: 0, radius: size, vx: 0, vy: 0, pulseOffset: Math.random() * Math.PI * 2 };
         let side = Math.floor(Math.random() * 4);
         if (side === 0) { o.x = Math.random()*canvas.width; o.y = -30; o.vy = speed; }
         else if (side === 1) { o.x = canvas.width+30; o.y = Math.random()*canvas.height; o.vx = -speed; }
@@ -136,96 +187,148 @@
         setTimeout(spawnObstacle, 1000 / (0.8 + level * 0.15));
     }
 
-    // New logic: Only spawn 1 Nova per level (starts level 3)
-    function checkNovaSpawn() {
-        if (level >= 3 && !novaSpawnedInThisLevel && gameActive) {
-            spawnNova();
-            novaSpawnedInThisLevel = true;
-        }
+    function spawnBonus() {
+        if (!gameActive) return;
+        let side = Math.floor(Math.random() * 4);
+        let b = { x: 0, y: 0, radius: 12, vx: 0, vy: 0 };
+        let speed = 2.2; // Slower speed
+        if (side === 0) { b.x = Math.random()*canvas.width; b.y = -20; b.vy = speed; }
+        else if (side === 1) { b.x = canvas.width+20; b.y = Math.random()*canvas.height; b.vx = -speed; }
+        else if (side === 2) { b.x = Math.random()*canvas.width; b.y = canvas.height+20; b.vy = -speed; }
+        else { b.x = -20; b.y = Math.random()*canvas.height; b.vx = speed; }
+        bonuses.push(b);
     }
 
     function spawnNova() {
+        if (!gameActive || novaSpawnedInThisLevel) return;
         let side = Math.floor(Math.random() * 4);
-        let n = {
-            x: 0, y: 0, radius: 15,
-            targetX: canvas.width / 2,
-            targetY: canvas.height / 2,
-            speed: 1.5 + (level * 0.3) // Nova movement speed increases with level
+        let n = { 
+            x: 0, y: 0, radius: 15, 
+            targetX: canvas.width / 2, 
+            targetY: canvas.height / 2, 
+            speed: 1.5 + (level * 0.2) 
         };
         if (side === 0) { n.x = Math.random()*canvas.width; n.y = -20; }
         else if (side === 1) { n.x = canvas.width+20; n.y = Math.random()*canvas.height; }
         else if (side === 2) { n.x = Math.random()*canvas.width; n.y = canvas.height+20; }
         else { n.x = -20; n.y = Math.random()*canvas.height; }
         novas.push(n);
+        novaSpawnedInThisLevel = true;
     }
 
-    function explodeNova(x, y) {
-        // Fragment speed scales with level
-        let fragmentSpeed = 2 + (level * 0.6); 
-        for (let i = 0; i < 10; i++) {
-            let angle = (Math.PI * 2 / 10) * i;
-            fragments.push({
-                x: x, y: y,
-                vx: Math.cos(angle) * fragmentSpeed,
-                vy: Math.sin(angle) * fragmentSpeed,
-                radius: 6
-            });
-        }
-    }
-
-    function startLevelTimer() {
+    function startTimers() {
         setInterval(() => {
             if (gameActive) {
-                level++;
-                novaSpawnedInThisLevel = false; // Reset for the new level
-                document.getElementById('levelVal').innerText = level;
-                checkNovaSpawn();
+                totalSeconds++;
+                
+                // Level Update (10s)
+                if (totalSeconds % 10 === 0) {
+                    level++;
+                    novaSpawnedInThisLevel = false;
+                    document.getElementById('levelVal').innerText = level;
+                    levelBox.classList.remove('blink-level');
+                    void levelBox.offsetWidth;
+                    levelBox.classList.add('blink-level');
+                    
+                    // Spawn Nova on new level (Level 3+)
+                    if (level >= 3) spawnNova();
+                }
+
+                // Bonus (20s)
+                if (totalSeconds % 20 === 0) spawnBonus();
+
+                // Rewards (50s)
+                if (totalSeconds % 50 === 0) {
+                    lives += 2;
+                    document.getElementById('livesVal').innerText = lives;
+                    livesBox.classList.remove('blink-lives');
+                    void livesBox.offsetWidth;
+                    livesBox.classList.add('blink-lives');
+                }
+
+                if (player.isShielded) {
+                    player.shieldTimer--;
+                    if (player.shieldTimer <= 0) player.isShielded = false;
+                }
             }
-        }, 10000);
-        // Also check immediately for the first level 3 entry
-        setInterval(checkNovaSpawn, 1000);
+        }, 1000);
     }
 
     function drawGlow(x, y, radius, color) {
-        let g = ctx.createRadialGradient(x, y, 0, x, y, radius * 3);
+        let g = ctx.createRadialGradient(x, y, 0, x, y, radius * 2.5);
         g.addColorStop(0, color);
         g.addColorStop(1, 'transparent');
         ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(x, y, radius * 3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, radius * 2.5, 0, Math.PI*2); ctx.fill();
     }
 
     function gameLoop() {
         if (!gameActive) return;
         ctx.fillStyle = "black";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+        pulseAngle += 0.08;
 
-        // Player
-        drawGlow(player.x, player.y, 35, 'rgba(255, 230, 100, 0.3)');
+        // Player Shield Rendering
+        if (player.isShielded) {
+            drawGlow(player.x, player.y, 40, 'rgba(255, 215, 0, 0.4)');
+            ctx.strokeStyle = "#ffd700";
+            ctx.lineWidth = 3;
+            ctx.beginPath(); 
+            ctx.arc(player.x, player.y, player.radius + 15, 0, Math.PI*2); 
+            ctx.stroke();
+            // Shield Bar
+            ctx.fillStyle = "#ffd700";
+            ctx.fillRect(player.x - 15, player.y + 25, (player.shieldTimer / 7) * 30, 4);
+        }
+
+        // Player Rendering
+        drawGlow(player.x, player.y, 30, 'rgba(255, 255, 255, 0.2)');
         ctx.fillStyle = "#fff";
         ctx.beginPath(); ctx.arc(player.x, player.y, player.radius, 0, Math.PI*2); ctx.fill();
 
-        // Red Boxes
+        // Bonus Logic
+        for (let i = bonuses.length - 1; i >= 0; i--) {
+            let b = bonuses[i];
+            b.x += b.vx; b.y += b.vy;
+            drawGlow(b.x, b.y, 25, 'rgba(255, 215, 0, 0.7)');
+            ctx.fillStyle = "#ffd700";
+            ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI*2); ctx.fill();
+            if (Math.hypot(player.x - b.x, player.y - b.y) < player.radius + b.radius) {
+                player.isShielded = true; player.shieldTimer = 7;
+                bonuses.splice(i, 1);
+            }
+            if (b.x < -100 || b.x > canvas.width + 100 || b.y < -100 || b.y > canvas.height + 100) bonuses.splice(i, 1);
+        }
+
+        // Obstacles (Glowing Pulse Red)
         for (let i = obstacles.length - 1; i >= 0; i--) {
             let o = obstacles[i];
             o.x += o.vx; o.y += o.vy;
-            drawGlow(o.x + o.size/2, o.y + o.size/2, o.size, 'rgba(255, 0, 0, 0.4)');
-            ctx.fillStyle = "red";
-            ctx.fillRect(o.x, o.y, o.size, o.size);
-            if (Math.hypot(player.x - (o.x + o.size/2), player.y - (o.y + o.size/2)) < player.radius + o.size/2) {
-                hit(); obstacles.splice(i, 1);
+            let p = 1 + Math.sin(pulseAngle + o.pulseOffset) * 0.15;
+            let r = o.radius * p;
+            
+            ctx.shadowBlur = 15 + Math.sin(pulseAngle + o.pulseOffset) * 10;
+            ctx.shadowColor = "red";
+            ctx.fillStyle = "#ff3333";
+            ctx.beginPath(); ctx.arc(o.x, o.y, r, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+
+            if (Math.hypot(player.x - o.x, player.y - o.y) < player.radius + r) {
+                if (!player.isShielded) hit();
+                obstacles.splice(i, 1);
             }
             if (o.x < -100 || o.x > canvas.width + 100 || o.y < -100 || o.y > canvas.height + 100) {
                 obstacles.splice(i, 1); score += 10;
             }
         }
 
-        // Nova (Mini-Boss)
+        // Supervisor (Nova) Logic
         for (let i = novas.length - 1; i >= 0; i--) {
             let n = novas[i];
             let angle = Math.atan2(n.targetY - n.y, n.targetX - n.x);
             n.x += Math.cos(angle) * n.speed;
             n.y += Math.sin(angle) * n.speed;
-            drawGlow(n.x, n.y, n.radius * 2, 'rgba(0, 230, 255, 0.6)');
+            drawGlow(n.x, n.y, 30, 'rgba(255, 255, 255, 0.5)');
             ctx.fillStyle = "white";
             ctx.beginPath(); ctx.arc(n.x, n.y, n.radius, 0, Math.PI*2); ctx.fill();
 
@@ -234,29 +337,34 @@
                 novas.splice(i, 1);
             }
             if (Math.hypot(player.x - n.x, player.y - n.y) < player.radius + n.radius) {
-                hit(); novas.splice(i, 1);
+                if (!player.isShielded) hit();
+                novas.splice(i, 1);
             }
         }
 
-        // Fragments (Scaling Speed)
+        // Fragments
         for (let i = fragments.length - 1; i >= 0; i--) {
             let f = fragments[i];
             f.x += f.vx; f.y += f.vy;
-            ctx.shadowBlur = 15; ctx.shadowColor = "#00ffff";
             ctx.fillStyle = "#00ffff";
             ctx.beginPath(); ctx.arc(f.x, f.y, f.radius, 0, Math.PI*2); ctx.fill();
-            ctx.shadowBlur = 0;
-
             if (Math.hypot(player.x - f.x, player.y - f.y) < player.radius + f.radius) {
-                hit(); fragments.splice(i, 1);
-            }
-            if (f.x < -50 || f.x > canvas.width+50 || f.y < -50 || f.y > canvas.height+50) {
+                if (!player.isShielded) hit();
                 fragments.splice(i, 1);
             }
+            if (f.x < -50 || f.x > canvas.width+50 || f.y < -50 || f.y > canvas.height+50) fragments.splice(i, 1);
         }
 
         document.getElementById('scoreVal').innerText = score;
         requestAnimationFrame(gameLoop);
+    }
+
+    function explodeNova(x, y) {
+        let fSpeed = 2 + (level * 0.5); 
+        for (let i = 0; i < 10; i++) {
+            let a = (Math.PI * 2 / 10) * i;
+            fragments.push({ x: x, y: y, vx: Math.cos(a) * fSpeed, vy: Math.sin(a) * fSpeed, radius: 6 });
+        }
     }
 
     function hit() {
