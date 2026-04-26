@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Kopiii Hanum</title>
+    <title>Kopiii Hanum - Pro Leaderboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,21 +35,35 @@
         }
 
         .overlay {
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.75);
             padding: 25px; border-radius: 15px;
             border: 3px solid #ffeeaa;
             backdrop-filter: blur(4px);
             box-shadow: 0 0 50px rgba(255, 238, 170, 0.5);
+            width: 85%; max-width: 400px;
         }
 
-        h1 { color: #ffeeaa; font-size: 32px; margin-bottom: 10px; letter-spacing: 5px; text-shadow: 0 0 15px #ffaa00; }
-        .instr { color: #fff; font-size: 13px; margin-bottom: 20px; line-height: 1.6; }
+        h1 { color: #ffeeaa; font-size: 28px; margin-bottom: 10px; letter-spacing: 3px; text-shadow: 0 0 15px #ffaa00; }
         
+        #nameInput {
+            width: 100%; padding: 12px; margin-bottom: 15px;
+            background: #222; border: 2px solid #ffeeaa;
+            color: #fff; text-align: center; font-family: inherit; font-size: 16px;
+        }
+
+        .leaderboard-ui {
+            margin: 15px 0; padding: 10px; border-top: 1px solid #444;
+            color: #ffeeaa; font-size: 12px; text-align: left;
+        }
+        .leaderboard-ui h3 { text-align: center; margin-bottom: 5px; text-decoration: underline; }
+        .leaderboard-ui ul { list-style: none; }
+        .leaderboard-ui li { display: flex; justify-content: space-between; margin-bottom: 3px; }
+
         .btn { 
             background: #ffeeaa; color: #000; padding: 15px 40px; 
             font-size: 20px; font-weight: bold; border-radius: 50px;
             cursor: pointer; border: none; box-shadow: 0 0 20px #ffeeaa;
-            touch-action: manipulation;
+            touch-action: manipulation; width: 100%;
         }
 
         #game-over {
@@ -75,25 +89,33 @@
     <div id="splash-screen">
         <div class="overlay">
             <h1>KOPIII HANUM</h1>
-            <p class="instr">
-                <span style="color:#ff0000;">●</span> Hindari Bola Merah & <span style="color:#00ff00; font-weight:bold;">Big Boss</span><br>
-                <span style="color:#ffffff;">○</span> Hindari Supervisor Bola Putih, akan meledak setiap level<br>
-                <span style="color:#ffd700;">★</span> Kejar dan Tangkap Bola Emas: extra pertahanan 7 Detik<br>
-                <span style="color:#00ff00;">+2 Nyawa</span> Setiap 50 Detik!
-            </p>
+            
+            <input type="text" id="nameInput" placeholder="MASUKKAN NAMA" maxlength="12">
+
+            <div class="leaderboard-ui">
+                <h3>TOP 5 HIGH SCORES</h3>
+                <ul id="scoreList"><li>Loading...</li></ul>
+            </div>
+
             <button class="btn" id="startBtn">START GAME</button>
         </div>
     </div>
 
     <div id="game-over">
         <h1 style="color:red; text-shadow: 0 0 20px red; font-size: 48px; margin-bottom: 10px;">GAME OVER</h1>
-        <p style="color:white; font-size: 24px; margin-bottom: 30px;">Final Score: <span id="finalScore">0</span></p>
+        <p style="color:white; font-size: 24px; margin-bottom: 10px;">Skor Kamu: <span id="finalScore">0</span></p>
+        <p id="savingMsg" style="color:#ffeeaa; font-size: 14px; margin-bottom: 20px;">Menyimpan skor...</p>
         <button class="btn" onclick="location.reload()">RETRY</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
 <script>
+    // --- Leaderboard Config ---
+    const BIN_ID = '69ed6df6aaba8821973a4a62'; // REPLACE ME
+    const MASTER_KEY = '$2a$10$QChwMTCQtDVfv716e69jFOsHGiGRoA7yRIq38Jn6ChU9NJ.bAbXWW'; // REPLACE ME
+    const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const startBtn = document.getElementById('startBtn');
@@ -101,10 +123,71 @@
     
     let score = 0, lives = 3, level = 1, totalSeconds = 0;
     let gameActive = false, dangerActive = false;
+    let playerName = "Player";
     let player = { x: 0, y: 0, radius: 10, isShielded: false, shieldTimer: 0 };
     let obstacles = [], novas = [], fragments = [], bonuses = [], hunters = [];
     let novaSpawnedInThisLevel = false, pulseAngle = 0;
     let gameTimerInterval, animationFrameId;
+
+    // --- Leaderboard Logic ---
+    async function fetchScores() {
+        try {
+            const res = await fetch(`${JSONBIN_URL}/latest`, {
+                headers: { 'X-Master-Key': MASTER_KEY }
+            });
+            const data = await res.json();
+            displayScores(data.record.leaderboard || []);
+        } catch (e) {
+            document.getElementById('scoreList').innerHTML = "<li>Error loading scores</li>";
+        }
+    }
+
+    function displayScores(list) {
+        const listEl = document.getElementById('scoreList');
+        if (list.length === 0) {
+            listEl.innerHTML = "<li>Belum ada skor!</li>";
+            return;
+        }
+        listEl.innerHTML = list
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 5)
+            .map((s, i) => `<li><span>${i+1}. ${s.name}</span> <span>${s.score}</span></li>`)
+            .join('');
+    }
+
+    async function uploadScore(name, finalScore) {
+        try {
+            // Get current list
+            const res = await fetch(`${JSONBIN_URL}/latest`, { headers: { 'X-Master-Key': MASTER_KEY } });
+            const data = await res.json();
+            let board = data.record.leaderboard || [];
+            
+            // Add new and sort
+            board.push({ name, score: finalScore });
+            board.sort((a, b) => b.score - a.score);
+            board = board.slice(0, 10); // Keep top 10 in database
+
+            // Save back
+            await fetch(JSONBIN_URL, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
+                body: JSON.stringify({ leaderboard: board })
+            });
+            document.getElementById('savingMsg').innerText = "Skor Berhasil Disimpan!";
+        } catch (e) {
+            document.getElementById('savingMsg').innerText = "Gagal menyimpan skor.";
+        }
+    }
+
+    // --- Game Logic ---
+    window.onload = fetchScores;
+
+    startBtn.addEventListener('click', () => {
+        const input = document.getElementById('nameInput').value.trim();
+        if(!input) { alert("Masukkan nama kamu dulu!"); return; }
+        playerName = input;
+        startGame();
+    });
 
     function startGame() {
         if (gameActive) return;
@@ -117,8 +200,6 @@
         gameLoop();
         runSafeStart();
     }
-
-    startBtn.addEventListener('click', startGame);
 
     function runSafeStart() {
         let count = 3;
@@ -215,7 +296,7 @@
     }
 
     function gameLoop() {
-        if (!gameActive) return; // THIS STOPS THE FREEZE
+        if (!gameActive) return;
         
         ctx.fillStyle = "black";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -328,19 +409,20 @@
     function hit() {
         lives--; 
         document.getElementById('livesVal').innerText = lives;
-        if (lives <= 0) {
-            endGame();
-        }
+        if (lives <= 0) endGame();
     }
 
     function endGame() {
         gameActive = false;
         dangerActive = false;
-        clearInterval(gameTimerInterval); // Stops all timer logic
-        cancelAnimationFrame(animationFrameId); // Stops the drawing loop
+        clearInterval(gameTimerInterval);
+        cancelAnimationFrame(animationFrameId);
         
         document.getElementById('finalScore').innerText = score;
         document.getElementById('game-over').style.display = 'flex';
+        
+        // Auto Upload
+        uploadScore(playerName, score);
     }
 
     window.addEventListener('resize', resize);
